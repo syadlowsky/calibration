@@ -5,7 +5,7 @@ from sklearn.model_selection import KFold
 from scipy.interpolate import UnivariateSpline
 import scipy.stats
 
-class SemiparametricMiscalibration(object):
+class SemiparametricClassificationCalibrationError(object):
     def __init__(self, folds=5, epsilon = 0.05, weights = 'constant', bootstrap_size = 500, orthogonal=False, normalize=False, smoothing='kernel'):
         self.folds = folds
         self.kf = KFold(n_splits=folds, shuffle=True, random_state=708)
@@ -47,7 +47,7 @@ class SemiparametricMiscalibration(object):
             out[b] = self._weighted_mean(v[boot_idx], weights[boot_idx])
         return np.std(out)
 
-    def _calculate_miscalibration(self, X, Y, a):
+    def _calculate_calibration_error(self, X, Y, a):
         stat = ((X- Y) * (X - a))
         if_ = ((X - a) * (X + a - 2*Y))
 
@@ -60,16 +60,16 @@ class SemiparametricMiscalibration(object):
         return est, se
 
     def rms_calibration_error_conf_int(self, X, Y, hyperparam_range=None, alpha=0.05):
-        est, se = self.calculate_miscalibration_crossfit(X, Y, hyperparam_range=None)
+        est, se = self.calculate_calibration_error_crossfit(X, Y, hyperparam_range=None)
         z_alpha_div_2 = -scipy.stats.norm.ppf(alpha / 2.0)
         return (np.sqrt(max(est - z_alpha_div_2 * se, 0)),
                 np.sqrt(max(est, 0)),
                 np.sqrt(max(est + z_alpha_div_2 * se, 0)))
 
-    def calculate_miscalibration_crossfit(self, X, Y, hyperparam_range=None):
+    def calculate_calibration_error_crossfit(self, X, Y, hyperparam_range=None):
         if hyperparam_range is None:
             hyperparam_range = np.linspace(1, X.shape[0] / 2.0, 40)
-        return self._calculate_miscalibration(
+        return self._calculate_calibration_error(
             X, Y,
             self._calculate_opt_cross_fit_calibration_function(X, Y, hyperparam_range))
 
